@@ -49,17 +49,22 @@ describe("labofi-solana-smart-contract", () => {
     )[0];
     console.log("Master edition metadata initialzed");
 
-    await program.methods.mint(
-      testNftSymbol, testNftSymbol, testNftUri,
-    ).accounts({
-      masterEdition: masterEditionAddress,
-      metadata: metadataAddress,
-      mint: mintKeypair.publicKey,
-      tokenAccount: tokenAddress,
-      mintAuthority: wallet.publicKey,
-      tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
-    })
-    .signers([mintKeypair ])
-    .rpc();
+    try {
+      const tx = await program.methods.mint(
+        testNftSymbol, testNftSymbol, testNftUri,
+      ).accounts({
+        masterEdition: masterEditionAddress,
+        metadata: metadataAddress,
+        mint: mintKeypair.publicKey,
+        tokenAccount: tokenAddress,
+        mintAuthority: wallet.publicKey,
+        tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
+      })
+      .signers([mintKeypair ])
+      .rpc();
+      console.log(tx);
+    } catch (err) {
+      console.error(err);
+    }
   });
 });

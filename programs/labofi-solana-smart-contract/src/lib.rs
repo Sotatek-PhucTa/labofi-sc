@@ -24,7 +24,7 @@ pub mod labofi_solana_smart_contract {
                     to: ctx.accounts.mint.to_account_info(),
                 },
             ),
-            1000000,
+            10000000,
             82,
             &ctx.accounts.token_program.key(),
         )
@@ -90,6 +90,7 @@ pub mod labofi_solana_smart_contract {
         let rent_program_account = ctx.accounts.rent.to_account_info();
         let master_edition_account = ctx.accounts.master_edition.to_account_info();
         let metadata_account = ctx.accounts.metadata.to_account_info();
+        let token_program_account = ctx.accounts.token_program.to_account_info();
 
         let mut create_metadata_account_cpi =
             token_instructions::CreateMetadataAccountV3CpiBuilder::new(
@@ -101,6 +102,8 @@ pub mod labofi_solana_smart_contract {
         create_metadata_account_cpi.update_authority(&mint_authority_account);
         create_metadata_account_cpi.system_program(&system_program_account);
         create_metadata_account_cpi.rent(Some(&rent_program_account));
+        create_metadata_account_cpi.is_mutable(true);
+        create_metadata_account_cpi.metadata(&metadata_account);
         create_metadata_account_cpi.data(DataV2 {
             name: metadata_title,
             symbol: metadata_symbol,
@@ -114,6 +117,8 @@ pub mod labofi_solana_smart_contract {
         create_metadata_account_cpi
             .invoke()
             .expect("Failed to create metadata account");
+
+        msg!("Creating metadata account success");
 
         msg!("Creating master edition metadata account ");
         msg!(
@@ -131,6 +136,8 @@ pub mod labofi_solana_smart_contract {
         create_master_edition_cpi.mint_authority(&mint_authority_account);
         create_master_edition_cpi.payer(&mint_authority_account);
         create_master_edition_cpi.metadata(&metadata_account);
+        create_master_edition_cpi.token_program(&token_program_account);
+        create_master_edition_cpi.system_program(&system_program_account);
 
         create_master_edition_cpi
             .invoke()
