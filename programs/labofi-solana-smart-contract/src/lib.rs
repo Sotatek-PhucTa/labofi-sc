@@ -1,8 +1,6 @@
 use anchor_lang::{prelude::*, system_program};
 use anchor_spl::{associated_token, token};
-use mpl_token_metadata::{
-    instructions as token_instructions, types::DataV2
-};
+use mpl_token_metadata::{instructions as token_instructions, types::DataV2};
 
 declare_id!("AYuNbYZ6tbHz6hqRKxFmfc7pGZARj4XAFvuiAaBgmK6W");
 
@@ -29,7 +27,8 @@ pub mod labofi_solana_smart_contract {
             1000000,
             82,
             &ctx.accounts.token_program.key(),
-        )?;
+        )
+        .expect("Failed to create mint account");
 
         msg!("Initializing mint account...");
         msg!("Mint: {}", &ctx.accounts.mint.key());
@@ -44,7 +43,8 @@ pub mod labofi_solana_smart_contract {
             0,
             &ctx.accounts.mint_authority.key(),
             Some(&ctx.accounts.mint_authority.key()),
-        )?;
+        )
+        .expect("Failed to initialize mint account");
 
         msg!("Creating token account...");
         msg!("Token Address: {}", &ctx.accounts.token_account.key());
@@ -58,7 +58,8 @@ pub mod labofi_solana_smart_contract {
                 system_program: ctx.accounts.system_program.to_account_info(),
                 token_program: ctx.accounts.token_program.to_account_info(),
             },
-        ))?;
+        ))
+        .expect("Failed to create token account");
 
         msg!("Minting token to token account...");
         msg!("Mint: {}", &ctx.accounts.mint.to_account_info().key());
@@ -73,7 +74,8 @@ pub mod labofi_solana_smart_contract {
                 },
             ),
             1,
-        )?;
+        )
+        .expect("Failed to mint token");
 
         msg!("Creating metadata account...");
         msg!(
@@ -89,9 +91,10 @@ pub mod labofi_solana_smart_contract {
         let master_edition_account = ctx.accounts.master_edition.to_account_info();
         let metadata_account = ctx.accounts.metadata.to_account_info();
 
-        let mut create_metadata_account_cpi = token_instructions::CreateMetadataAccountV3CpiBuilder::new(
-            &token_metadta_program_account
-        );
+        let mut create_metadata_account_cpi =
+            token_instructions::CreateMetadataAccountV3CpiBuilder::new(
+                &token_metadta_program_account,
+            );
         create_metadata_account_cpi.mint(&mint_account);
         create_metadata_account_cpi.mint_authority(&mint_authority_account);
         create_metadata_account_cpi.payer(&mint_authority_account);
@@ -99,16 +102,18 @@ pub mod labofi_solana_smart_contract {
         create_metadata_account_cpi.system_program(&system_program_account);
         create_metadata_account_cpi.rent(Some(&rent_program_account));
         create_metadata_account_cpi.data(DataV2 {
-                name: metadata_title,
-                symbol: metadata_symbol,
-                uri: metadata_uri,
-                seller_fee_basis_points: 0,
-                creators: None,
-                collection: None,
-                uses: None,
+            name: metadata_title,
+            symbol: metadata_symbol,
+            uri: metadata_uri,
+            seller_fee_basis_points: 0,
+            creators: None,
+            collection: None,
+            uses: None,
         });
 
-        create_metadata_account_cpi.invoke()?;
+        create_metadata_account_cpi
+            .invoke()
+            .expect("Failed to create metadata account");
 
         msg!("Creating master edition metadata account ");
         msg!(
@@ -116,9 +121,10 @@ pub mod labofi_solana_smart_contract {
             &ctx.accounts.master_edition.to_account_info().key()
         );
 
-        let mut create_master_edition_cpi = token_instructions::CreateMasterEditionV3CpiBuilder::new(
-            &token_metadta_program_account,
-        );
+        let mut create_master_edition_cpi =
+            token_instructions::CreateMasterEditionV3CpiBuilder::new(
+                &token_metadta_program_account,
+            );
         create_master_edition_cpi.edition(&master_edition_account);
         create_master_edition_cpi.mint(&mint_account);
         create_master_edition_cpi.update_authority(&mint_authority_account);
@@ -126,7 +132,9 @@ pub mod labofi_solana_smart_contract {
         create_master_edition_cpi.payer(&mint_authority_account);
         create_master_edition_cpi.metadata(&metadata_account);
 
-        create_master_edition_cpi.invoke()?;
+        create_master_edition_cpi
+            .invoke()
+            .expect("Failed to create master edition metadata account");
 
         msg!("Mint token success");
         Ok(())
