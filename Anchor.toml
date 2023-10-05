@@ -1,14 +1,14 @@
 [features]
 seeds = false
 skip-lint = false
-[programs.localnet]
+[programs.devnet]
 labofi_solana_smart_contract = "AYuNbYZ6tbHz6hqRKxFmfc7pGZARj4XAFvuiAaBgmK6W"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Localnet"
+cluster = "devnet"
 wallet = "/Users/hoangphuc/.config/solana/id.json"
 
 [scripts]
