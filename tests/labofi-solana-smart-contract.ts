@@ -50,7 +50,8 @@ describe("labofi-solana-smart-contract", () => {
     console.log("Master edition metadata initialzed");
 
     try {
-      const tx = await program.methods.mint(
+      console.log("tx1");
+      const tx1 = await program.methods.initAccount(
         testNftSymbol, testNftSymbol, testNftUri,
       ).accounts({
         masterEdition: masterEditionAddress,
@@ -62,7 +63,21 @@ describe("labofi-solana-smart-contract", () => {
       })
       .signers([mintKeypair ])
       .rpc();
-      console.log(tx);
+      console.log(tx1);
+      console.log("tx2");
+      const tx2 = await program.methods.mint(
+        testNftSymbol, testNftSymbol, testNftUri,
+      ).accounts({
+        masterEdition: masterEditionAddress,
+        metadata: metadataAddress,
+        mint: mintKeypair.publicKey,
+        tokenAccount: tokenAddress,
+        mintAuthority: wallet.publicKey,
+        tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
+      })
+      .signers([mintKeypair ])
+      .rpc();
+      console.log(tx2);
     } catch (err) {
       console.error(err);
     }

@@ -8,7 +8,7 @@ declare_id!("AYuNbYZ6tbHz6hqRKxFmfc7pGZARj4XAFvuiAaBgmK6W");
 pub mod labofi_solana_smart_contract {
     use super::*;
 
-    pub fn mint(
+    pub fn init_account(
         ctx: Context<MintNft>,
         metadata_title: String,
         metadata_symbol: String,
@@ -77,6 +77,21 @@ pub mod labofi_solana_smart_contract {
         )
         .expect("Failed to mint token");
 
+        msg!("Creating metadata account...");
+        msg!(
+            "Metadata account address: {}",
+            &ctx.accounts.metadata.to_account_info().key()
+        );
+
+        Ok(())
+    }
+
+    pub fn mint(
+        ctx: Context<MintNft>,
+        metadata_title: String,
+        metadata_symbol: String,
+        metadata_uri: String,
+    ) -> Result<()> {
         msg!("Creating metadata account...");
         msg!(
             "Metadata account address: {}",
