@@ -8,11 +8,8 @@ declare_id!("AYuNbYZ6tbHz6hqRKxFmfc7pGZARj4XAFvuiAaBgmK6W");
 pub mod labofi_solana_smart_contract {
     use super::*;
 
-    pub fn init_account(
-        ctx: Context<MintNft>,
-        metadata_title: String,
-        metadata_symbol: String,
-        metadata_uri: String,
+    pub fn init_nft_account(
+        ctx: Context<InitNftAccount>,
     ) -> Result<()> {
         msg!("Creating mint account...");
         msg!("Mint: {}", &ctx.accounts.mint.key());
@@ -77,12 +74,6 @@ pub mod labofi_solana_smart_contract {
         )
         .expect("Failed to mint token");
 
-        msg!("Creating metadata account...");
-        msg!(
-            "Metadata account address: {}",
-            &ctx.accounts.metadata.to_account_info().key()
-        );
-
         Ok(())
     }
 
@@ -92,13 +83,7 @@ pub mod labofi_solana_smart_contract {
         metadata_symbol: String,
         metadata_uri: String,
     ) -> Result<()> {
-        msg!("Creating metadata account...");
-        msg!(
-            "Metadata account address: {}",
-            &ctx.accounts.metadata.to_account_info().key()
-        );
-
-        let token_metadta_program_account = ctx.accounts.token_metadata_program.to_account_info();
+        let token_metadata_program_account = ctx.accounts.token_metadata_program.to_account_info();
         let mint_account = ctx.accounts.mint.to_account_info();
         let mint_authority_account = ctx.accounts.mint_authority.to_account_info();
         let system_program_account = ctx.accounts.system_program.to_account_info();
@@ -107,9 +92,16 @@ pub mod labofi_solana_smart_contract {
         let metadata_account = ctx.accounts.metadata.to_account_info();
         let token_program_account = ctx.accounts.token_program.to_account_info();
 
+        msg!("Creating metadata account...");
+        msg!(
+            "Metadata account address: {}",
+            &ctx.accounts.metadata.to_account_info().key()
+        );
+
+
         let mut create_metadata_account_cpi =
             token_instructions::CreateMetadataAccountV3CpiBuilder::new(
-                &token_metadta_program_account,
+                &token_metadata_program_account,
             );
         create_metadata_account_cpi.mint(&mint_account);
         create_metadata_account_cpi.mint_authority(&mint_authority_account);
@@ -143,7 +135,7 @@ pub mod labofi_solana_smart_contract {
 
         let mut create_master_edition_cpi =
             token_instructions::CreateMasterEditionV3CpiBuilder::new(
-                &token_metadta_program_account,
+                &token_metadata_program_account,
             );
         create_master_edition_cpi.edition(&master_edition_account);
         create_master_edition_cpi.mint(&mint_account);
@@ -181,7 +173,22 @@ pub struct MintNft<'info> {
     pub rent: Sysvar<'info, Rent>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, token::Token>,
-    pub associated_token_program: Program<'info, associated_token::AssociatedToken>,
     /// CHECK: Metaplex will check this
     pub token_metadata_program: UncheckedAccount<'info>,
+}
+
+
+#[derive(Accounts)]
+pub struct InitNftAccount<'info> {
+    #[account(mut)]
+    pub mint: Signer<'info>,
+    /// CHECK: We're about to create this with Anchor
+    #[account(mut)]
+    pub token_account: UncheckedAccount<'info>,
+    #[account(mut)]
+    pub mint_authority: Signer<'info>,
+    pub rent: Sysvar<'info, Rent>,
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, token::Token>,
+    pub associated_token_program: Program<'info, associated_token::AssociatedToken>,
 }

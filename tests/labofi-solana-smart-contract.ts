@@ -51,15 +51,11 @@ describe("labofi-solana-smart-contract", () => {
 
     try {
       console.log("tx1");
-      const tx1 = await program.methods.initAccount(
-        testNftTitle, testNftSymbol, testNftUri,
+      const tx1 = await program.methods.initNftAccount(
       ).accounts({
-        masterEdition: masterEditionAddress,
-        metadata: metadataAddress,
         mint: mintKeypair.publicKey,
         tokenAccount: tokenAddress,
         mintAuthority: wallet.publicKey,
-        tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
       })
       .signers([mintKeypair ])
       .rpc();
