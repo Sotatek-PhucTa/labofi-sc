@@ -3,9 +3,9 @@ import { Program } from "@coral-xyz/anchor";
 import { LabofiSolanaSmartContract } from "../target/types/labofi_solana_smart_contract";
 
 describe("labofi-solana-smart-contract", () => {
-  const testNftTitle = "Beta";
-  const testNftSymbol = "BETA";
-  const testNftUri = "https://raw.githubusercontent.com/Coding-and-Crypto/Solana-NFT-Marketplace/master/assets/example.json";
+  const testNftTitle = "Labofi_Profile";
+  const testNftSymbol = "PROFILE";
+  const testNftUri = "ipfs:://QmexKAGNCb3DqSJCkSskg5aB2fdAk1BZMH7ZQLwwZe9p98";
 
   // Configure the client to use the local cluster.
   const provider = anchor.AnchorProvider.env();
@@ -52,7 +52,7 @@ describe("labofi-solana-smart-contract", () => {
     try {
       console.log("tx1");
       const tx1 = await program.methods.initAccount(
-        testNftSymbol, testNftSymbol, testNftUri,
+        testNftTitle, testNftSymbol, testNftUri,
       ).accounts({
         masterEdition: masterEditionAddress,
         metadata: metadataAddress,
@@ -66,7 +66,7 @@ describe("labofi-solana-smart-contract", () => {
       console.log(tx1);
       console.log("tx2");
       const tx2 = await program.methods.mint(
-        testNftSymbol, testNftSymbol, testNftUri,
+        testNftTitle, testNftSymbol, testNftUri,
       ).accounts({
         masterEdition: masterEditionAddress,
         metadata: metadataAddress,
