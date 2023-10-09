@@ -2,7 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { LabofiSolanaSmartContract } from "../target/types/labofi_solana_smart_contract";
 
-describe("labofi-solana-smart-contract", () => {
+describe("labofi-solana-smart-contract", async () => {
   const testNftTitle = "Labofi_Profile";
   const testNftSymbol = "PROFILE";
   const testNftUri = "ipfs:://QmexKAGNCb3DqSJCkSskg5aB2fdAk1BZMH7ZQLwwZe9p98";
@@ -11,6 +11,9 @@ describe("labofi-solana-smart-contract", () => {
   const provider = anchor.AnchorProvider.env();
   const wallet = provider.wallet as anchor.Wallet;
   anchor.setProvider(provider);
+
+  const receivedKeyPair = await anchor.web3.Keypair.generate();
+  console.log("Received address ", receivedKeyPair.publicKey.toBase58());
 
 
   const program = anchor.workspace.LabofiSolanaSmartContract as Program<LabofiSolanaSmartContract>;

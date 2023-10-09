@@ -165,9 +165,6 @@ pub struct MintNft<'info> {
     pub master_edition: UncheckedAccount<'info>,
     #[account(mut)]
     pub mint: Signer<'info>,
-    /// CHECK: We're about to create this with Anchor
-    #[account(mut)]
-    pub token_account: UncheckedAccount<'info>,
     #[account(mut)]
     pub mint_authority: Signer<'info>,
     pub rent: Sysvar<'info, Rent>,
