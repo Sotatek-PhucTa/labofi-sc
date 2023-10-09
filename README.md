@@ -4,7 +4,7 @@ This repository contains code about on-chain part of Labofi ecosystem. This repo
 This repository contains code, deployed address, as well as unit tests for multiple programs.
 
 Program lists:
-- <b>labobfi-solana-smart-contract</b>: A contract allow the admin address can mint an NFT once a day.
+- <b>labobfi-solana-smart-contract</b>: A contract allow the admin address can mint an NFT once a day for a specific address
 
 # Labofi-solana-smart-contract
 ## To compile
