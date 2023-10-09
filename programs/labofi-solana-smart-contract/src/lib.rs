@@ -2,11 +2,22 @@ use anchor_lang::{prelude::*, system_program};
 use anchor_spl::{associated_token, token};
 use mpl_token_metadata::{instructions as token_instructions, types::DataV2};
 
-declare_id!("AYuNbYZ6tbHz6hqRKxFmfc7pGZARj4XAFvuiAaBgmK6W");
+declare_id!("6NxkpDWKZwr8TKqtduPRVJoaHptRAZPC7Md2ch1qQJsf");
 
 #[program]
 pub mod labofi_solana_smart_contract {
     use super::*;
+
+    pub fn init_contract(
+        ctx: Context<InitContract>,
+    ) -> Result<()> {
+        msg!("Initializing contract...");
+        let global_storage = &mut ctx.accounts.global_state;
+        global_storage.admin = *ctx.accounts.admin.key;
+        global_storage.mint_time = Clock::get()?.unix_timestamp as u64;
+        msg!("Init contract success");
+        Ok(())
+    }
 
     pub fn init_nft_account(
         ctx: Context<InitNftAccount>,
@@ -191,4 +202,25 @@ pub struct InitNftAccount<'info> {
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, token::Token>,
     pub associated_token_program: Program<'info, associated_token::AssociatedToken>,
+}
+
+#[derive(Accounts)]
+pub struct InitContract<'info> {
+    #[account(
+        init,
+        seeds = [b"global"],
+        bump,
+        payer = admin,
+        space = 8 + 32 + 8,
+    )]
+    pub global_state: Account<'info, GlobalState>,
+    #[account(mut)]
+    pub admin: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+#[account]
+pub struct GlobalState {
+    pub admin: Pubkey,
+    pub mint_time: u64,
 }

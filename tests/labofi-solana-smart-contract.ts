@@ -1,5 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
+import { BN } from "bn.js";
+import { assert } from "chai";
 import { LabofiSolanaSmartContract } from "../target/types/labofi_solana_smart_contract";
 
 describe("labofi-solana-smart-contract", async () => {
@@ -15,12 +17,37 @@ describe("labofi-solana-smart-contract", async () => {
   const receivedKeyPair = await anchor.web3.Keypair.generate();
   console.log("Received address ", receivedKeyPair.publicKey.toBase58());
 
-
   const program = anchor.workspace.LabofiSolanaSmartContract as Program<LabofiSolanaSmartContract>;
 
   const TOKEN_METADATA_PROGRAM_ID = new anchor.web3.PublicKey(
     "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
   );
+
+  it("Initialize contract", async () => {
+    // Add your test here.
+    const globalState = await anchor.web3.PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("global"),
+      ],
+      program.programId,
+    )[0];
+    try {
+      const tx = await program.methods.initContract()
+        .accounts({
+          globalState: globalState,
+          admin: wallet.publicKey,
+        })
+        .rpc();
+      console.log(tx);
+    } catch (err) {
+      console.error(err);
+    };
+
+    const globalStateAccount = await program.account.globalState.fetch(globalState);
+    assert(globalStateAccount.admin.toBase58() === wallet.publicKey.toBase58());
+    console.log("Global state mintTime ", globalStateAccount.mintTime.toString());
+    assert(globalStateAccount.mintTime.gt(new BN(0)));
+  })
 
   it("Mint initialized!", async () => {
     // Add your test here.
