@@ -51,7 +51,7 @@ pub mod labofi_solana_smart_contract {
                 payer: ctx.accounts.mint_authority.to_account_info(),
                 associated_token: ctx.accounts.token_account.to_account_info(),
                 mint: ctx.accounts.mint.to_account_info(),
-                authority: ctx.accounts.mint_authority.to_account_info(),
+                authority: ctx.accounts.token_account_authority.to_account_info(),
                 system_program: ctx.accounts.system_program.to_account_info(),
                 token_program: ctx.accounts.token_program.to_account_info(),
             },
@@ -182,6 +182,9 @@ pub struct InitNftAccount<'info> {
     /// CHECK: We're about to create this with Anchor
     #[account(mut)]
     pub token_account: UncheckedAccount<'info>,
+    /// CHECK: We're about to create this with Anchor
+    #[account()]
+    pub token_account_authority: UncheckedAccount<'info>,
     #[account(mut)]
     pub mint_authority: Signer<'info>,
     pub rent: Sysvar<'info, Rent>,

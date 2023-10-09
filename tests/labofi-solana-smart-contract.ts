@@ -27,7 +27,7 @@ describe("labofi-solana-smart-contract", async () => {
     const mintKeypair: anchor.web3.Keypair = anchor.web3.Keypair.generate();
     const tokenAddress = await anchor.utils.token.associatedAddress({
       mint: mintKeypair.publicKey,
-      owner: wallet.publicKey,
+      owner: receivedKeyPair.publicKey,
     });
     console.log(`New token: ${mintKeypair.publicKey.toBase58()}`);
 
@@ -58,6 +58,7 @@ describe("labofi-solana-smart-contract", async () => {
       ).accounts({
         mint: mintKeypair.publicKey,
         tokenAccount: tokenAddress,
+        tokenAccountAuthority: receivedKeyPair.publicKey,
         mintAuthority: wallet.publicKey,
       })
       .signers([mintKeypair ])
@@ -70,7 +71,6 @@ describe("labofi-solana-smart-contract", async () => {
         masterEdition: masterEditionAddress,
         metadata: metadataAddress,
         mint: mintKeypair.publicKey,
-        tokenAccount: tokenAddress,
         mintAuthority: wallet.publicKey,
         tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
       })
