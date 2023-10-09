@@ -46,6 +46,13 @@ dotenv.config();
     )[0];
     console.log("Master edition metadata initialzed");
 
+    const globalState = await anchor.web3.PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("global"),
+      ],
+      program.programId,
+    )[0];
+
     try {
         const testNftTitle = "Labofi_Profile";
         const testNftSymbol = "PROFILE";
@@ -56,6 +63,7 @@ dotenv.config();
             tokenAccount: tokenAddress,
             tokenAccountAuthority: receivedKeyPair.publicKey,
             mintAuthority: wallet.publicKey,
+            globalState,
         })
             .signers([mintKeypair])
             .postInstructions([

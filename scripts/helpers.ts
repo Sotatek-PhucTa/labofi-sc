@@ -16,11 +16,25 @@ export async function getWalletSuite(network: "devnet" | "mainnet") {
         url = process.env.MAINNET_URL || "https://api.mainnet.solana.com";
     }
     const connection = new web3.Connection(url);
-    const provider = new anchor.AnchorProvider(connection, new anchor.Wallet(keyPair), {commitment: "confirmed"});
+    const provider = new anchor.AnchorProvider(connection, new anchor.Wallet(keyPair), { commitment: "confirmed" });
     return { provider, wallet };
 }
 
 export function getLabofiProgram(provider: anchor.Provider) {
     anchor.setProvider(provider);
     return anchor.workspace.LabofiSolanaSmartContract as anchor.Program<LabofiSolanaSmartContract>;
+}
+
+export async function getTestWalletSuite(network: "devnet" | "mainnet") {
+    const keyPair = web3.Keypair.generate();
+    const wallet = new anchor.Wallet(keyPair);
+    let url = "";
+    if (network === "devnet") {
+        url = process.env.DEVNET_URL || "https://api.devnet.solana.com";
+    } else if (network === "mainnet") {
+        url = process.env.MAINNET_URL || "https://api.mainnet.solana.com";
+    }
+    const connection = new web3.Connection(url);
+    const provider = new anchor.AnchorProvider(connection, new anchor.Wallet(keyPair), { commitment: "confirmed" });
+    return { provider, wallet, keyPair };
 }

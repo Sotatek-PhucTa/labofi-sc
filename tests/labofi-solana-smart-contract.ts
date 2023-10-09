@@ -2,6 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { BN } from "bn.js";
 import { assert } from "chai";
+import { getLabofiProgram, getTestWalletSuite } from "../scripts/helpers";
 import { LabofiSolanaSmartContract } from "../target/types/labofi_solana_smart_contract";
 
 describe("labofi-solana-smart-contract", async () => {
@@ -50,7 +51,7 @@ describe("labofi-solana-smart-contract", async () => {
     assert(globalStateAccount.mintTime.gt(new BN(0)));
   })
 
-  it("Mint initialized!", async () => {
+  it("Mint successs", async () => {
     // Add your test here.
     const mintKeypair: anchor.web3.Keypair = anchor.web3.Keypair.generate();
     const tokenAddress = await anchor.utils.token.associatedAddress({
@@ -115,6 +116,85 @@ describe("labofi-solana-smart-contract", async () => {
     } catch (err) {
       console.error(err);
       throw err;
+    }
+  });
+
+  it("Mint failure NotAuthorized", async () => {
+    const { provider, wallet, keyPair } = await getTestWalletSuite("devnet");
+    console.log("New wallet is ", wallet.publicKey.toBase58());
+    const newProgram = await getLabofiProgram(provider);
+    try {
+      const txAirdrop = await provider.connection.requestAirdrop(wallet.publicKey, 5000000);
+      console.log("Tx airdrop ", txAirdrop);
+    } catch (err) {
+      console.error("Error airdrop");
+      console.error(err);
+      throw err;
+    }
+    // Add your test here.
+    const mintKeypair: anchor.web3.Keypair = anchor.web3.Keypair.generate();
+    const tokenAddress = await anchor.utils.token.associatedAddress({
+      mint: mintKeypair.publicKey,
+      owner: receivedKeyPair.publicKey,
+    });
+    console.log(`New token: ${mintKeypair.publicKey.toBase58()}`);
+
+    const metadataAddress = anchor.web3.PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("metadata"),
+        TOKEN_METADATA_PROGRAM_ID.toBuffer(),
+        mintKeypair.publicKey.toBuffer(),
+      ],
+      TOKEN_METADATA_PROGRAM_ID,
+    )[0];
+    console.log("Metadata initialzed");
+
+    const masterEditionAddress = anchor.web3.PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("metadata"),
+        TOKEN_METADATA_PROGRAM_ID.toBuffer(),
+        mintKeypair.publicKey.toBuffer(),
+        Buffer.from("edition"),
+      ],
+      TOKEN_METADATA_PROGRAM_ID,
+    )[0];
+    console.log("Master edition metadata initialzed");
+
+    const globalState = await anchor.web3.PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("global"),
+      ],
+      program.programId,
+    )[0];
+
+    try {
+      const tx = await newProgram.methods.initNftAccount(
+      ).accounts({
+        mint: mintKeypair.publicKey,
+        tokenAccount: tokenAddress,
+        tokenAccountAuthority: receivedKeyPair.publicKey,
+        mintAuthority: wallet.publicKey,
+        globalState,
+      })
+        .signers([mintKeypair, keyPair])
+        .postInstructions([
+          await program.methods.mint(
+            testNftTitle, testNftSymbol, testNftUri,
+          ).accounts({
+            masterEdition: masterEditionAddress,
+            metadata: metadataAddress,
+            mint: mintKeypair.publicKey,
+            mintAuthority: wallet.publicKey,
+            tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
+          })
+            .signers([mintKeypair, keyPair])
+            .instruction(),
+        ])
+        .rpc();
+      console.log(tx);
+    } catch (err) {
+      console.error(err);
+      assert(err.error.errorCode.code === "NotAuthorized");
     }
   });
 });
