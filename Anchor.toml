@@ -2,7 +2,7 @@
 seeds = false
 skip-lint = false
 [programs.devnet]
-labofi_solana_smart_contract = "6NxkpDWKZwr8TKqtduPRVJoaHptRAZPC7Md2ch1qQJsf"
+labofi_solana_smart_contract = "mKajGfPPTPZY2L3ofCDYND6Bk9NDFQz6mmGjfKWP8rj"
 
 [registry]
 url = "https://api.apr.dev"

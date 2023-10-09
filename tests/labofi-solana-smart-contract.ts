@@ -41,6 +41,7 @@ describe("labofi-solana-smart-contract", async () => {
       console.log(tx);
     } catch (err) {
       console.error(err);
+      throw err;
     };
 
     const globalStateAccount = await program.account.globalState.fetch(globalState);
@@ -79,6 +80,13 @@ describe("labofi-solana-smart-contract", async () => {
     )[0];
     console.log("Master edition metadata initialzed");
 
+    const globalState = await anchor.web3.PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("global"),
+      ],
+      program.programId,
+    )[0];
+
     try {
       const tx = await program.methods.initNftAccount(
       ).accounts({
@@ -86,6 +94,7 @@ describe("labofi-solana-smart-contract", async () => {
         tokenAccount: tokenAddress,
         tokenAccountAuthority: receivedKeyPair.publicKey,
         mintAuthority: wallet.publicKey,
+        globalState,
       })
         .signers([mintKeypair])
         .postInstructions([
@@ -105,6 +114,7 @@ describe("labofi-solana-smart-contract", async () => {
       console.log(tx);
     } catch (err) {
       console.error(err);
+      throw err;
     }
   });
 });

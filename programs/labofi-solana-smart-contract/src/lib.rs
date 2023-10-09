@@ -2,7 +2,7 @@ use anchor_lang::{prelude::*, system_program};
 use anchor_spl::{associated_token, token};
 use mpl_token_metadata::{instructions as token_instructions, types::DataV2};
 
-declare_id!("6NxkpDWKZwr8TKqtduPRVJoaHptRAZPC7Md2ch1qQJsf");
+declare_id!("mKajGfPPTPZY2L3ofCDYND6Bk9NDFQz6mmGjfKWP8rj");
 
 #[program]
 pub mod labofi_solana_smart_contract {
@@ -24,6 +24,7 @@ pub mod labofi_solana_smart_contract {
     ) -> Result<()> {
         msg!("Creating mint account...");
         msg!("Mint: {}", &ctx.accounts.mint.key());
+        require!(ctx.accounts.mint_authority.key() == ctx.accounts.global_state.admin, LabofiError::NotAuthorized);
         system_program::create_account(
             CpiContext::new(
                 ctx.accounts.token_program.to_account_info(),
@@ -198,6 +199,8 @@ pub struct InitNftAccount<'info> {
     pub token_account_authority: UncheckedAccount<'info>,
     #[account(mut)]
     pub mint_authority: Signer<'info>,
+    #[account()]
+    pub global_state: Account<'info, GlobalState>,
     pub rent: Sysvar<'info, Rent>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, token::Token>,
@@ -223,4 +226,10 @@ pub struct InitContract<'info> {
 pub struct GlobalState {
     pub admin: Pubkey,
     pub mint_time: u64,
+}
+
+#[error_code]
+enum LabofiError {
+    #[msg("Only Admin can mint")]
+    NotAuthorized,
 }
