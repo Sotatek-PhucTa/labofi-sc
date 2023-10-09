@@ -20,7 +20,7 @@ describe("labofi-solana-smart-contract", async () => {
 
   const TOKEN_METADATA_PROGRAM_ID = new anchor.web3.PublicKey(
     "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
-  );  
+  );
 
   it("Mint initialized!", async () => {
     // Add your test here.
@@ -53,30 +53,29 @@ describe("labofi-solana-smart-contract", async () => {
     console.log("Master edition metadata initialzed");
 
     try {
-      console.log("tx1");
-      const tx1 = await program.methods.initNftAccount(
+      const tx = await program.methods.initNftAccount(
       ).accounts({
         mint: mintKeypair.publicKey,
         tokenAccount: tokenAddress,
         tokenAccountAuthority: receivedKeyPair.publicKey,
         mintAuthority: wallet.publicKey,
       })
-      .signers([mintKeypair ])
-      .rpc();
-      console.log(tx1);
-      console.log("tx2");
-      const tx2 = await program.methods.mint(
-        testNftTitle, testNftSymbol, testNftUri,
-      ).accounts({
-        masterEdition: masterEditionAddress,
-        metadata: metadataAddress,
-        mint: mintKeypair.publicKey,
-        mintAuthority: wallet.publicKey,
-        tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
-      })
-      .signers([mintKeypair ])
-      .rpc();
-      console.log(tx2);
+        .signers([mintKeypair])
+        .postInstructions([
+          await program.methods.mint(
+            testNftTitle, testNftSymbol, testNftUri,
+          ).accounts({
+            masterEdition: masterEditionAddress,
+            metadata: metadataAddress,
+            mint: mintKeypair.publicKey,
+            mintAuthority: wallet.publicKey,
+            tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
+          })
+            .signers([mintKeypair])
+            .instruction(),
+        ])
+        .rpc();
+      console.log(tx);
     } catch (err) {
       console.error(err);
     }
