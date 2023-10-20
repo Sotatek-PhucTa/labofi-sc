@@ -4,12 +4,12 @@ import { getLabofiProgram, getWalletSuite } from "./helpers";
 dotenv.config();
 
 (async () => {
-    const { provider, wallet } = await getWalletSuite("devnet");
+    const { provider, wallet } = await getWalletSuite("devnet", false);
     console.log("Public key is ", wallet.publicKey.toBase58());
-    const program = await getLabofiProgram(provider);
+    const program = getLabofiProgram(provider);
     console.log("Program is ", program.programId.toBase58());
 
-    const receivedKeyPair = await anchor.web3.Keypair.generate();
+    const receivedKeyPair = anchor.web3.Keypair.generate();
     console.log("Received address ", receivedKeyPair.publicKey.toBase58());
 
     const TOKEN_METADATA_PROGRAM_ID = new anchor.web3.PublicKey(
@@ -19,7 +19,7 @@ dotenv.config();
 
 
     const mintKeypair: anchor.web3.Keypair = anchor.web3.Keypair.generate();
-    const tokenAddress = await anchor.utils.token.associatedAddress({
+    const tokenAddress = anchor.utils.token.associatedAddress({
         mint: mintKeypair.publicKey,
         owner: receivedKeyPair.publicKey,
     });
@@ -33,7 +33,7 @@ dotenv.config();
         ],
         TOKEN_METADATA_PROGRAM_ID,
     )[0];
-    console.log("Metadata initialzed");
+    console.log("Metadata initialized");
 
     const masterEditionAddress = anchor.web3.PublicKey.findProgramAddressSync(
         [
@@ -44,9 +44,9 @@ dotenv.config();
         ],
         TOKEN_METADATA_PROGRAM_ID,
     )[0];
-    console.log("Master edition metadata initialzed");
+    console.log("Master edition metadata initialized");
 
-    const globalState = await anchor.web3.PublicKey.findProgramAddressSync(
+    const globalState = anchor.web3.PublicKey.findProgramAddressSync(
       [
         Buffer.from("global"),
       ],

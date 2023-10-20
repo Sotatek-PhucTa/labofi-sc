@@ -5,28 +5,14 @@ import dotenv from "dotenv";
 dotenv.config();
 import { LabofiSolanaSmartContract } from "../target/types/labofi_solana_smart_contract";
 
-export async function getWalletSuite(network: "devnet" | "mainnet") {
-    const secretKey = process.env.SECRET_KEY || "";
-    const keyPair = web3.Keypair.fromSecretKey(bs58.decode(secretKey));
-    const wallet = new anchor.Wallet(keyPair);
-    let url = "";
-    if (network === "devnet") {
-        url = process.env.DEVNET_URL || "https://api.devnet.solana.com";
-    } else if (network === "mainnet") {
-        url = process.env.MAINNET_URL || "https://api.mainnet.solana.com";
+export async function getWalletSuite(network: "devnet" | "mainnet", newWallet: boolean) {
+    let keyPair: web3.Keypair = null;
+    if (newWallet) {
+        keyPair = web3.Keypair.generate();
+    } else {
+        const secretKey = process.env.SECRET_KEY || "";
+        keyPair = web3.Keypair.fromSecretKey(bs58.decode(secretKey));
     }
-    const connection = new web3.Connection(url);
-    const provider = new anchor.AnchorProvider(connection, new anchor.Wallet(keyPair), { commitment: "confirmed" });
-    return { provider, wallet };
-}
-
-export function getLabofiProgram(provider: anchor.Provider) {
-    anchor.setProvider(provider);
-    return anchor.workspace.LabofiSolanaSmartContract as anchor.Program<LabofiSolanaSmartContract>;
-}
-
-export async function getTestWalletSuite(network: "devnet" | "mainnet") {
-    const keyPair = web3.Keypair.generate();
     const wallet = new anchor.Wallet(keyPair);
     let url = "";
     if (network === "devnet") {
@@ -37,4 +23,9 @@ export async function getTestWalletSuite(network: "devnet" | "mainnet") {
     const connection = new web3.Connection(url);
     const provider = new anchor.AnchorProvider(connection, new anchor.Wallet(keyPair), { commitment: "confirmed" });
     return { provider, wallet, keyPair };
+}
+
+export function getLabofiProgram(provider: anchor.Provider) {
+    anchor.setProvider(provider);
+    return anchor.workspace.LabofiSolanaSmartContract as anchor.Program<LabofiSolanaSmartContract>;
 }

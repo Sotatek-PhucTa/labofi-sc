@@ -2,7 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { BN } from "bn.js";
 import { assert } from "chai";
-import { getLabofiProgram, getTestWalletSuite } from "../scripts/helpers";
+import {getLabofiProgram, getWalletSuite} from "../scripts/helpers";
 import { LabofiSolanaSmartContract } from "../target/types/labofi_solana_smart_contract";
 
 describe("labofi-solana-smart-contract", async () => {
@@ -15,7 +15,7 @@ describe("labofi-solana-smart-contract", async () => {
   const wallet = provider.wallet as anchor.Wallet;
   anchor.setProvider(provider);
 
-  const receivedKeyPair = await anchor.web3.Keypair.generate();
+  const receivedKeyPair = anchor.web3.Keypair.generate();
   console.log("Received address ", receivedKeyPair.publicKey.toBase58());
 
   const program = anchor.workspace.LabofiSolanaSmartContract as Program<LabofiSolanaSmartContract>;
@@ -26,7 +26,7 @@ describe("labofi-solana-smart-contract", async () => {
 
   it("Initialize contract", async () => {
     // Add your test here.
-    const globalState = await anchor.web3.PublicKey.findProgramAddressSync(
+    const globalState = anchor.web3.PublicKey.findProgramAddressSync(
       [
         Buffer.from("global"),
       ],
@@ -54,7 +54,7 @@ describe("labofi-solana-smart-contract", async () => {
   it("Mint successs", async () => {
     // Add your test here.
     const mintKeypair: anchor.web3.Keypair = anchor.web3.Keypair.generate();
-    const tokenAddress = await anchor.utils.token.associatedAddress({
+    const tokenAddress = anchor.utils.token.associatedAddress({
       mint: mintKeypair.publicKey,
       owner: receivedKeyPair.publicKey,
     });
@@ -68,7 +68,7 @@ describe("labofi-solana-smart-contract", async () => {
       ],
       TOKEN_METADATA_PROGRAM_ID,
     )[0];
-    console.log("Metadata initialzed");
+    console.log("Metadata initialized");
 
     const masterEditionAddress = anchor.web3.PublicKey.findProgramAddressSync(
       [
@@ -79,9 +79,9 @@ describe("labofi-solana-smart-contract", async () => {
       ],
       TOKEN_METADATA_PROGRAM_ID,
     )[0];
-    console.log("Master edition metadata initialzed");
+    console.log("Master edition metadata initialized");
 
-    const globalState = await anchor.web3.PublicKey.findProgramAddressSync(
+    const globalState = anchor.web3.PublicKey.findProgramAddressSync(
       [
         Buffer.from("global"),
       ],
@@ -120,9 +120,9 @@ describe("labofi-solana-smart-contract", async () => {
   });
 
   it("Mint failure NotAuthorized", async () => {
-    const { provider, wallet, keyPair } = await getTestWalletSuite("devnet");
+    const { provider, wallet, keyPair } = await getWalletSuite("devnet", true);
     console.log("New wallet is ", wallet.publicKey.toBase58());
-    const newProgram = await getLabofiProgram(provider);
+    const newProgram = getLabofiProgram(provider);
     try {
       const txAirdrop = await provider.connection.requestAirdrop(wallet.publicKey, 5000000);
       console.log("Tx airdrop ", txAirdrop);
@@ -147,7 +147,7 @@ describe("labofi-solana-smart-contract", async () => {
       ],
       TOKEN_METADATA_PROGRAM_ID,
     )[0];
-    console.log("Metadata initialzed");
+    console.log("Metadata initialized");
 
     const masterEditionAddress = anchor.web3.PublicKey.findProgramAddressSync(
       [
@@ -158,9 +158,9 @@ describe("labofi-solana-smart-contract", async () => {
       ],
       TOKEN_METADATA_PROGRAM_ID,
     )[0];
-    console.log("Master edition metadata initialzed");
+    console.log("Master edition metadata initialized");
 
-    const globalState = await anchor.web3.PublicKey.findProgramAddressSync(
+    const globalState = anchor.web3.PublicKey.findProgramAddressSync(
       [
         Buffer.from("global"),
       ],
