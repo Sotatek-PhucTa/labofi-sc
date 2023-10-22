@@ -1,16 +1,15 @@
-use anchor_lang::{prelude::*, system_program};
+use anchor_lang::prelude::*;
+use anchor_spl::token::Mint;
 use anchor_spl::{associated_token, token};
 use mpl_token_metadata::{instructions as token_instructions, types::DataV2};
 
-declare_id!("DokRp5Lx8SPTfVLXzYC1LiLdJE8YSGSX4e9mPfuDD9Mu");
+declare_id!("4cGzhmo3yCvvZpwiNQia8pQuBZPa1BYbYgBvvR813ccn");
 
 #[program]
 pub mod labofi_solana_smart_contract {
     use super::*;
 
-    pub fn init_contract(
-        ctx: Context<InitContract>,
-    ) -> Result<()> {
+    pub fn init_contract(ctx: Context<InitContract>) -> Result<()> {
         msg!("Initializing contract...");
         let global_storage = &mut ctx.accounts.global_state;
         global_storage.admin = *ctx.accounts.admin.key;
@@ -19,41 +18,13 @@ pub mod labofi_solana_smart_contract {
         Ok(())
     }
 
-    pub fn init_nft_account(
-        ctx: Context<InitNftAccount>,
-    ) -> Result<()> {
+    pub fn init_nft_account(ctx: Context<InitNftAccount>) -> Result<()> {
         msg!("Creating mint account...");
         msg!("Mint: {}", &ctx.accounts.mint.key());
-        require!(ctx.accounts.mint_authority.key() == ctx.accounts.global_state.admin, LabofiError::NotAuthorized);
-        system_program::create_account(
-            CpiContext::new(
-                ctx.accounts.token_program.to_account_info(),
-                system_program::CreateAccount {
-                    from: ctx.accounts.mint_authority.to_account_info(),
-                    to: ctx.accounts.mint.to_account_info(),
-                },
-            ),
-            10000000,
-            82,
-            &ctx.accounts.token_program.key(),
-        )
-        .expect("Failed to create mint account");
-
-        msg!("Initializing mint account...");
-        msg!("Mint: {}", &ctx.accounts.mint.key());
-        token::initialize_mint(
-            CpiContext::new(
-                ctx.accounts.token_program.to_account_info(),
-                token::InitializeMint {
-                    mint: ctx.accounts.mint.to_account_info(),
-                    rent: ctx.accounts.rent.to_account_info(),
-                },
-            ),
-            0,
-            &ctx.accounts.mint_authority.key(),
-            Some(&ctx.accounts.mint_authority.key()),
-        )
-        .expect("Failed to initialize mint account");
+        require!(
+            ctx.accounts.mint_authority.key() == ctx.accounts.global_state.admin,
+            LabofiError::NotAuthorized
+        );
 
         msg!("Creating token account...");
         msg!("Token Address: {}", &ctx.accounts.token_account.key());
@@ -109,7 +80,6 @@ pub mod labofi_solana_smart_contract {
             "Metadata account address: {}",
             &ctx.accounts.metadata.to_account_info().key()
         );
-
 
         let mut create_metadata_account_cpi =
             token_instructions::CreateMetadataAccountV3CpiBuilder::new(
@@ -186,11 +156,16 @@ pub struct MintNft<'info> {
     pub token_metadata_program: UncheckedAccount<'info>,
 }
 
-
 #[derive(Accounts)]
 pub struct InitNftAccount<'info> {
-    #[account(mut)]
-    pub mint: Signer<'info>,
+    #[account(
+        init,
+        payer = mint_authority,
+        mint::decimals = 0,
+        mint::authority = mint_authority,
+        mint::freeze_authority = mint_authority,
+    )]
+    pub mint: Account<'info, Mint>,
     /// CHECK: We're about to create this with Anchor
     #[account(mut)]
     pub token_account: UncheckedAccount<'info>,

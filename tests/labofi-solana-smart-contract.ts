@@ -8,7 +8,8 @@ import { LabofiSolanaSmartContract } from "../target/types/labofi_solana_smart_c
 describe("labofi-solana-smart-contract", async () => {
   const testNftTitle = "Labofi_Profile";
   const testNftSymbol = "PROFILE";
-  const testNftUri = "ipfs:://QmexKAGNCb3DqSJCkSskg5aB2fdAk1BZMH7ZQLwwZe9p98";
+  const testNftUri =
+    "https://arweave.net/Bu0o_EDhq9Iq_4Cr2_RPTNkKncrHMyQ2FxD1vxwLXPM";
 
   // Configure the client to use the local cluster.
   const provider = anchor.AnchorProvider.env();
