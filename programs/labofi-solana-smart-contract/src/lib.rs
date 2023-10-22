@@ -1,9 +1,9 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::Mint;
+use anchor_spl::token::{Mint, TokenAccount};
 use anchor_spl::{associated_token, token};
 use mpl_token_metadata::{instructions as token_instructions, types::DataV2};
 
-declare_id!("4cGzhmo3yCvvZpwiNQia8pQuBZPa1BYbYgBvvR813ccn");
+declare_id!("Gu2gc5Xz4RSDGr3bv8PKZa48cNyYiCaRkT49jZz91DD2");
 
 #[program]
 pub mod labofi_solana_smart_contract {
@@ -19,27 +19,11 @@ pub mod labofi_solana_smart_contract {
     }
 
     pub fn init_nft_account(ctx: Context<InitNftAccount>) -> Result<()> {
-        msg!("Creating mint account...");
         msg!("Mint: {}", &ctx.accounts.mint.key());
         require!(
             ctx.accounts.mint_authority.key() == ctx.accounts.global_state.admin,
             LabofiError::NotAuthorized
         );
-
-        msg!("Creating token account...");
-        msg!("Token Address: {}", &ctx.accounts.token_account.key());
-        associated_token::create(CpiContext::new(
-            ctx.accounts.associated_token_program.to_account_info(),
-            associated_token::Create {
-                payer: ctx.accounts.mint_authority.to_account_info(),
-                associated_token: ctx.accounts.token_account.to_account_info(),
-                mint: ctx.accounts.mint.to_account_info(),
-                authority: ctx.accounts.token_account_authority.to_account_info(),
-                system_program: ctx.accounts.system_program.to_account_info(),
-                token_program: ctx.accounts.token_program.to_account_info(),
-            },
-        ))
-        .expect("Failed to create token account");
 
         msg!("Minting token to token account...");
         msg!("Mint: {}", &ctx.accounts.mint.to_account_info().key());
@@ -166,9 +150,13 @@ pub struct InitNftAccount<'info> {
         mint::freeze_authority = mint_authority,
     )]
     pub mint: Account<'info, Mint>,
-    /// CHECK: We're about to create this with Anchor
-    #[account(mut)]
-    pub token_account: UncheckedAccount<'info>,
+    #[account(
+        init,
+        payer = mint_authority,
+        associated_token::mint = mint,
+        associated_token::authority = token_account_authority,
+    )]
+    pub token_account: Account<'info, TokenAccount>,
     /// CHECK: We're about to create this with Anchor
     #[account()]
     pub token_account_authority: UncheckedAccount<'info>,

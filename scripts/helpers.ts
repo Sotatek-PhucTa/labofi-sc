@@ -12,6 +12,7 @@ dotenv.config();
 import { LabofiSolanaSmartContract } from "../target/types/labofi_solana_smart_contract";
 import fs from "fs";
 import path from "path";
+import os from "os";
 
 export async function getWalletSuite(
   network: "devnet" | "mainnet",
@@ -34,7 +35,7 @@ export async function getWalletSuite(
     url = process.env.MAINNET_URL || "https://api.mainnet.solana.com";
     bundlrAddr = "https://mainnet.bundlr.network";
   }
-  const connection = new web3.Connection(url);
+  const connection = new web3.Connection(url, { commitment: "confirmed" });
   const provider = new anchor.AnchorProvider(
     connection,
     new anchor.Wallet(keyPair),
@@ -81,4 +82,19 @@ export async function uploadMetadataFile(
       },
     ],
   });
+}
+
+export function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export function getDefaultWallet(filePath?: string) {
+  const dataPath = filePath
+    ? filePath
+    : path.join(os.homedir(), ".config/solana/id.json");
+  console.log("data path ", dataPath);
+  const data = fs.readFileSync(dataPath);
+  return anchor.web3.Keypair.fromSecretKey(
+    Uint8Array.from(JSON.parse(data.toString()))
+  );
 }
