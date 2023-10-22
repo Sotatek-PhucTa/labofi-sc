@@ -2,7 +2,7 @@ use anchor_lang::{prelude::*, system_program};
 use anchor_spl::{associated_token, token};
 use mpl_token_metadata::{instructions as token_instructions, types::DataV2};
 
-declare_id!("ENXuPNyixwCSw68SNsvo6qcvDQ1rafVrJ3eQctSLfZT5");
+declare_id!("DokRp5Lx8SPTfVLXzYC1LiLdJE8YSGSX4e9mPfuDD9Mu");
 
 #[program]
 pub mod labofi_solana_smart_contract {

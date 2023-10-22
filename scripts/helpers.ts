@@ -35,7 +35,9 @@ export async function getWalletSuite(network: "devnet" | "mainnet", newWallet: b
             providerUrl: url,
             timeout: 60000,
         }));
-    return { provider, wallet, keyPair, connection, metaplex };
+    anchor.setProvider(provider);
+    const program =  anchor.workspace.LabofiSolanaSmartContract as anchor.Program<LabofiSolanaSmartContract>;
+    return { provider, wallet, keyPair, connection, metaplex, program };
 }
 
 export function getLabofiProgram(provider: anchor.Provider) {
@@ -43,7 +45,7 @@ export function getLabofiProgram(provider: anchor.Provider) {
     return anchor.workspace.LabofiSolanaSmartContract as anchor.Program<LabofiSolanaSmartContract>;
 }
 
-export async function uploadMetadataFile(metaplex: Metaplex, nftTitle: string, nftSymbol: string, imgName: string) {
+export async function uploadMetadataFile(metaplex: Metaplex, nftTitle: string, nftSymbol: string, imgName: string, rankType: "bronze" | "silver") {
     const imagePath = path.join(__dirname, "../assets/images", imgName);
     const image = fs.readFileSync(imagePath);
     return await metaplex.nfts().uploadMetadata({
@@ -53,7 +55,7 @@ export async function uploadMetadataFile(metaplex: Metaplex, nftTitle: string, n
         attributes: [
             {
                 trait_type: "rank",
-                value: "bronze",
+                value: rankType,
             }
         ]
     })

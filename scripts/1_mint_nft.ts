@@ -1,10 +1,10 @@
 import * as anchor from "@coral-xyz/anchor";
 import dotenv from "dotenv";
-import { getLabofiProgram, getWalletSuite } from "./helpers";
+import {getLabofiProgram, getWalletSuite, uploadMetadataFile} from "./helpers";
 dotenv.config();
 
 (async () => {
-    const { provider, wallet } = await getWalletSuite("devnet", false);
+    const { provider, wallet, metaplex } = await getWalletSuite("devnet", false);
     console.log("Public key is ", wallet.publicKey.toBase58());
     const program = getLabofiProgram(provider);
     console.log("Program is ", program.programId.toBase58());
@@ -54,9 +54,9 @@ dotenv.config();
     )[0];
 
     try {
-        const testNftTitle = "Labofi_Profile";
-        const testNftSymbol = "PROFILE";
-        const testNftUri = "ipfs:://QmexKAGNCb3DqSJCkSskg5aB2fdAk1BZMH7ZQLwwZe9p98";
+        const nftTitle = "Labofi_Profile";
+        const nftSymbol = "PROFILE";
+        const { uri } = await uploadMetadataFile(metaplex, nftTitle, nftSymbol, "test_image.png", "bronze");
         const tx = await program.methods.initNftAccount(
         ).accounts({
             mint: mintKeypair.publicKey,
@@ -68,7 +68,7 @@ dotenv.config();
             .signers([mintKeypair])
             .postInstructions([
                 await program.methods.mint(
-                    testNftTitle, testNftSymbol, testNftUri,
+                    nftTitle, nftSymbol, uri,
                 ).accounts({
                     masterEdition: masterEditionAddress,
                     metadata: metadataAddress,
