@@ -59,18 +59,21 @@ describe("labofi-solana-smart-contract", async () => {
 
   it("Mint successs", async () => {
     // Add your test here.
-    const mintKeypair: anchor.web3.Keypair = anchor.web3.Keypair.generate();
+    const [mintAddress] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("bronze"), receivedKeyPair.publicKey.toBuffer()],
+      program.programId
+    );
     const tokenAddress = anchor.utils.token.associatedAddress({
-      mint: mintKeypair.publicKey,
+      mint: mintAddress,
       owner: receivedKeyPair.publicKey,
     });
-    console.log(`New token: ${mintKeypair.publicKey.toBase58()}`);
+    console.log(`New token: ${mintAddress.toBase58()}`);
 
     const metadataAddress = anchor.web3.PublicKey.findProgramAddressSync(
       [
         Buffer.from("metadata"),
         TOKEN_METADATA_PROGRAM_ID.toBuffer(),
-        mintKeypair.publicKey.toBuffer(),
+        mintAddress.toBuffer(),
       ],
       TOKEN_METADATA_PROGRAM_ID
     )[0];
@@ -80,7 +83,7 @@ describe("labofi-solana-smart-contract", async () => {
       [
         Buffer.from("metadata"),
         TOKEN_METADATA_PROGRAM_ID.toBuffer(),
-        mintKeypair.publicKey.toBuffer(),
+        mintAddress.toBuffer(),
         Buffer.from("edition"),
       ],
       TOKEN_METADATA_PROGRAM_ID
@@ -96,24 +99,23 @@ describe("labofi-solana-smart-contract", async () => {
       const tx = await program.methods
         .initNftAccount()
         .accounts({
-          mint: mintKeypair.publicKey,
+          mint: mintAddress,
           tokenAccount: tokenAddress,
           tokenAccountAuthority: receivedKeyPair.publicKey,
           mintAuthority: wallet.publicKey,
           globalState,
         })
-        .signers([mintKeypair])
         .postInstructions([
           await program.methods
             .mint(testNftTitle, testNftSymbol, testNftUri)
             .accounts({
               masterEdition: masterEditionAddress,
               metadata: metadataAddress,
-              mint: mintKeypair.publicKey,
+              mint: mintAddress,
               mintAuthority: wallet.publicKey,
+              tokenAccountAuthority: receivedKeyPair.publicKey,
               tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
             })
-            .signers([mintKeypair])
             .instruction(),
         ])
         .rpc();
@@ -127,6 +129,10 @@ describe("labofi-solana-smart-contract", async () => {
   it("Mint failure NotAuthorized", async () => {
     const { provider, wallet, keyPair } = await getWalletSuite("devnet", true);
     console.log("New wallet is ", wallet.publicKey.toBase58());
+    const [mintAddress] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("bronze"), wallet.publicKey.toBuffer()],
+      program.programId
+    );
     const newProgram = getLabofiProgram(provider);
     try {
       const txAirdrop = await provider.connection.requestAirdrop(
@@ -140,18 +146,17 @@ describe("labofi-solana-smart-contract", async () => {
       throw err;
     }
     // Add your test here.
-    const mintKeypair: anchor.web3.Keypair = anchor.web3.Keypair.generate();
     const tokenAddress = anchor.utils.token.associatedAddress({
-      mint: mintKeypair.publicKey,
-      owner: receivedKeyPair.publicKey,
+      mint: mintAddress,
+      owner: wallet.publicKey,
     });
-    console.log(`New token: ${mintKeypair.publicKey.toBase58()}`);
+    console.log(`New token: ${mintAddress.toBase58()}`);
 
     const metadataAddress = anchor.web3.PublicKey.findProgramAddressSync(
       [
         Buffer.from("metadata"),
         TOKEN_METADATA_PROGRAM_ID.toBuffer(),
-        mintKeypair.publicKey.toBuffer(),
+        mintAddress.toBuffer(),
       ],
       TOKEN_METADATA_PROGRAM_ID
     )[0];
@@ -161,7 +166,7 @@ describe("labofi-solana-smart-contract", async () => {
       [
         Buffer.from("metadata"),
         TOKEN_METADATA_PROGRAM_ID.toBuffer(),
-        mintKeypair.publicKey.toBuffer(),
+        mintAddress.toBuffer(),
         Buffer.from("edition"),
       ],
       TOKEN_METADATA_PROGRAM_ID
@@ -177,24 +182,25 @@ describe("labofi-solana-smart-contract", async () => {
       const tx = await newProgram.methods
         .initNftAccount()
         .accounts({
-          mint: mintKeypair.publicKey,
+          mint: mintAddress,
           tokenAccount: tokenAddress,
-          tokenAccountAuthority: receivedKeyPair.publicKey,
+          tokenAccountAuthority: wallet.publicKey,
           mintAuthority: wallet.publicKey,
           globalState,
         })
-        .signers([mintKeypair, keyPair])
+        .signers([keyPair])
         .postInstructions([
           await program.methods
             .mint(testNftTitle, testNftSymbol, testNftUri)
             .accounts({
               masterEdition: masterEditionAddress,
               metadata: metadataAddress,
-              mint: mintKeypair.publicKey,
+              mint: mintAddress,
               mintAuthority: wallet.publicKey,
+              tokenAccountAuthority: wallet.publicKey,
               tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
             })
-            .signers([mintKeypair, keyPair])
+            .signers([keyPair])
             .instruction(),
         ])
         .rpc();
