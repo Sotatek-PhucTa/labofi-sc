@@ -3,7 +3,7 @@ use anchor_spl::token::{Mint, TokenAccount};
 use anchor_spl::{associated_token, token};
 use mpl_token_metadata::{instructions as token_instructions, types::DataV2};
 
-declare_id!("9wbCkU8pfqKefztyBLtZsYVqdVKXcEjp17hUvRG52VYR");
+declare_id!("5H5UzP14GXG9YuSem39BVTXky6PfEbyAP95RE4iSN1hA");
 
 #[program]
 pub mod labofi_solana_smart_contract {
@@ -138,6 +138,15 @@ pub mod labofi_solana_smart_contract {
         msg!("Mint token success");
         Ok(())
     }
+
+    pub fn close_global_state(_ctx: Context<CloseGlobalState>) -> Result<()> {
+        require!(
+            cfg!(feature = "dev-testing"),
+            LabofiError::NotProductionInstruction
+        );
+        msg!("Closing global state...");
+        Ok(())
+    }
 }
 
 #[derive(Accounts)]
@@ -213,6 +222,23 @@ pub struct InitContract<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[derive(Accounts)]
+pub struct CloseGlobalState<'info> {
+    #[account(
+        mut,
+        close = close_authorizer,
+        seeds = [b"global"],
+        bump,
+    )]
+    pub global_state: Account<'info, GlobalState>,
+    #[account(
+        mut,
+        address = global_state.admin.key(),
+    )]
+    pub close_authorizer: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
 #[account]
 pub struct GlobalState {
     pub admin: Pubkey,
@@ -223,4 +249,6 @@ pub struct GlobalState {
 enum LabofiError {
     #[msg("Only Admin can mint")]
     NotAuthorized,
+    #[msg("Not Production Instruction")]
+    NotProductionInstruction,
 }

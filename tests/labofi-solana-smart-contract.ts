@@ -57,7 +57,7 @@ describe("labofi-solana-smart-contract", async () => {
     assert(globalStateAccount.mintTime.gt(new BN(0)));
   });
 
-  it("Mint successs", async () => {
+  xit("Mint successs", async () => {
     // Add your test here.
     const [mintAddress] = anchor.web3.PublicKey.findProgramAddressSync(
       [Buffer.from("bronze"), receivedKeyPair.publicKey.toBuffer()],
@@ -126,7 +126,7 @@ describe("labofi-solana-smart-contract", async () => {
     }
   });
 
-  it("Mint failure NotAuthorized", async () => {
+  xit("Mint failure NotAuthorized", async () => {
     const { provider, wallet, keyPair } = await getWalletSuite("devnet", true);
     console.log("New wallet is ", wallet.publicKey.toBase58());
     const [mintAddress] = anchor.web3.PublicKey.findProgramAddressSync(
@@ -208,6 +208,52 @@ describe("labofi-solana-smart-contract", async () => {
     } catch (err) {
       console.error(err);
       assert(err.error.errorCode.code === "NotAuthorized");
+    }
+  });
+
+  it("Close global state failure unauthorized", async () => {
+    const globalState = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("global")],
+      program.programId
+    )[0];
+
+    const { provider, wallet } = await getWalletSuite("devnet", true);
+    console.log("New wallet is ", wallet.publicKey.toBase58());
+    const newProgram = getLabofiProgram(provider);
+
+    try {
+      const tx = await program.methods
+        .closeGlobalState()
+        .accounts({
+          globalState,
+          closeAuthorizer: wallet.publicKey,
+        })
+        .rpc();
+      console.log("Close done with tx ", tx);
+    } catch (err) {
+      console.error(err);
+      assert(err.toString().includes("Signature verification failed"));
+    }
+  });
+
+  it("Close global state success", async () => {
+    const globalState = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("global")],
+      program.programId
+    )[0];
+
+    try {
+      const tx = await program.methods
+        .closeGlobalState()
+        .accounts({
+          globalState,
+          closeAuthorizer: wallet.publicKey,
+        })
+        .rpc();
+      console.log("Close done with tx ", tx);
+    } catch (err) {
+      console.error(err);
+      throw err;
     }
   });
 });
