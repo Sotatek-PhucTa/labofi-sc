@@ -4,6 +4,7 @@ import { BN } from "bn.js";
 import { assert } from "chai";
 import { getLabofiProgram, getWalletSuite } from "../scripts/helpers";
 import { LabofiSolanaSmartContract } from "../target/types/labofi_solana_smart_contract";
+import { expect } from "chai";
 
 describe("labofi-solana-smart-contract", async () => {
   const testNftTitle = "Labofi_Profile";
@@ -55,6 +56,42 @@ describe("labofi-solana-smart-contract", async () => {
       globalStateAccount.mintTime.toString()
     );
     assert(globalStateAccount.mintTime.gt(new BN(0)));
+  });
+
+  it("Initialize tracking state success", async () => {
+    const userKeyPair = anchor.web3.Keypair.generate();
+    let [trackingState] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("tracking"), userKeyPair.publicKey.toBuffer()],
+      program.programId
+    );
+
+    const globalState = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("global")],
+      program.programId
+    )[0];
+
+    try {
+      const tx = await program.methods
+        .initTrackingState()
+        .accounts({
+          trackingState,
+          userAccount: userKeyPair.publicKey,
+          initializer: wallet.publicKey,
+          globalState,
+        })
+        .rpc();
+      console.log(tx);
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+
+    const trackingStateAccount = await program.account.trackingState.fetch(
+      trackingState
+    );
+    console.log(trackingStateAccount.countedRank);
+    assert(trackingStateAccount.countedRank[0] === 1);
+    expect(trackingStateAccount.currentRank).haveOwnProperty("white");
   });
 
   xit("Mint successs", async () => {

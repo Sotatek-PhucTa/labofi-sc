@@ -18,6 +18,14 @@ pub mod labofi_solana_smart_contract {
         Ok(())
     }
 
+    pub fn init_tracking_state(ctx: Context<InitTrackingState>) -> Result<()> {
+        msg!("Initializing tracking state...");
+        let tracking_state = &mut ctx.accounts.tracking_state;
+        tracking_state.counted_rank[0] += 1;
+        tracking_state.current_rank = ProfileRank::White;
+        Ok(())
+    }
+
     pub fn init_nft_account(ctx: Context<InitNftAccount>) -> Result<()> {
         msg!("Mint: {}", &ctx.accounts.mint.key());
         require!(
@@ -39,8 +47,8 @@ pub mod labofi_solana_smart_contract {
                 &[&[
                     "bronze".as_bytes(),
                     ctx.accounts.token_account_authority.key().as_ref(),
-                    &[*ctx.bumps.get("mint").unwrap()]
-                ]]
+                    &[*ctx.bumps.get("mint").unwrap()],
+                ]],
             ),
             1,
         )
@@ -94,13 +102,11 @@ pub mod labofi_solana_smart_contract {
         });
 
         create_metadata_account_cpi
-            .invoke_signed(&[
-                &[
-                    "bronze".as_bytes(),
-                    token_account_authority.key().as_ref(),
-                    &[*ctx.bumps.get("mint").unwrap()]
-                ]
-            ])
+            .invoke_signed(&[&[
+                "bronze".as_bytes(),
+                token_account_authority.key().as_ref(),
+                &[*ctx.bumps.get("mint").unwrap()],
+            ]])
             .expect("Failed to create metadata account");
 
         msg!("Creating metadata account success");
@@ -125,14 +131,11 @@ pub mod labofi_solana_smart_contract {
         create_master_edition_cpi.system_program(&system_program_account);
 
         create_master_edition_cpi
-            .invoke_signed(&[
-                &[
-                    "bronze".as_bytes(),
-                    token_account_authority.key().as_ref(),
-                    &[*ctx.bumps.get("mint").unwrap()],
-                ]
-            ]
-            )
+            .invoke_signed(&[&[
+                "bronze".as_bytes(),
+                token_account_authority.key().as_ref(),
+                &[*ctx.bumps.get("mint").unwrap()],
+            ]])
             .expect("Failed to create master edition metadata account");
 
         msg!("Mint token success");
@@ -239,10 +242,51 @@ pub struct CloseGlobalState<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[derive(Accounts)]
+pub struct InitTrackingState<'info> {
+    #[account(
+        init,
+        space = 8 + 32 + 8 + 4 * 5,
+        payer = initializer,
+        seeds = [b"tracking", user_account.key().as_ref()],
+        bump,
+    )]
+    pub tracking_state: Account<'info, TrackingState>,
+    /// CHECK: We're about to create this with metaplex
+    #[account()]
+    pub user_account: UncheckedAccount<'info>,
+    #[account(
+        mut,
+        address = global_state.admin.key(),
+    )]
+    pub initializer: Signer<'info>,
+    #[account(
+        seeds = [b"global"],
+        bump,
+    )]
+    pub global_state: Account<'info, GlobalState>,
+    pub system_program: Program<'info, System>,
+}
+
 #[account]
 pub struct GlobalState {
     pub admin: Pubkey,
     pub mint_time: u64,
+}
+
+#[account]
+pub struct TrackingState {
+    pub counted_rank: [u32; 5],
+    pub current_rank: ProfileRank,
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ProfileRank {
+    White,
+    Gray,
+    Green,
+    Bronze,
+    Silver,
 }
 
 #[error_code]
@@ -251,4 +295,6 @@ enum LabofiError {
     NotAuthorized,
     #[msg("Not Production Instruction")]
     NotProductionInstruction,
+    #[msg("Unknown Operation")]
+    UnknownOperation,
 }
