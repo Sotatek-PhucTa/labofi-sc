@@ -2,7 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { BN } from "bn.js";
 import { assert } from "chai";
-import { getLabofiProgram, getWalletSuite } from "../scripts/helpers";
+import { delay, getLabofiProgram, getWalletSuite } from "../scripts/helpers";
 import { LabofiSolanaSmartContract } from "../target/types/labofi_solana_smart_contract";
 import { expect } from "chai";
 
@@ -94,7 +94,7 @@ describe("labofi-solana-smart-contract", async () => {
     expect(trackingStateAccount.currentRank).haveOwnProperty("white");
   });
 
-  xit("Mint successs", async () => {
+  it("Mint successs", async () => {
     // Add your test here.
     const [mintAddress] = anchor.web3.PublicKey.findProgramAddressSync(
       [Buffer.from("bronze"), receivedKeyPair.publicKey.toBuffer()],
@@ -134,7 +134,7 @@ describe("labofi-solana-smart-contract", async () => {
 
     try {
       const tx = await program.methods
-        .initNftAccount()
+        .initNftAccount({ bronze: {} })
         .accounts({
           mint: mintAddress,
           tokenAccount: tokenAddress,
@@ -144,7 +144,7 @@ describe("labofi-solana-smart-contract", async () => {
         })
         .postInstructions([
           await program.methods
-            .mint(testNftTitle, testNftSymbol, testNftUri)
+            .mint({ bronze: {} }, testNftTitle, testNftSymbol, testNftUri)
             .accounts({
               masterEdition: masterEditionAddress,
               metadata: metadataAddress,
@@ -163,7 +163,7 @@ describe("labofi-solana-smart-contract", async () => {
     }
   });
 
-  xit("Mint failure NotAuthorized", async () => {
+  it("Mint failure NotAuthorized", async () => {
     const { provider, wallet, keyPair } = await getWalletSuite("devnet", true);
     console.log("New wallet is ", wallet.publicKey.toBase58());
     const [mintAddress] = anchor.web3.PublicKey.findProgramAddressSync(
@@ -177,6 +177,7 @@ describe("labofi-solana-smart-contract", async () => {
         5000000
       );
       console.log("Tx airdrop ", txAirdrop);
+      await delay(5000);
     } catch (err) {
       console.error("Error airdrop");
       console.error(err);
@@ -217,7 +218,7 @@ describe("labofi-solana-smart-contract", async () => {
 
     try {
       const tx = await newProgram.methods
-        .initNftAccount()
+        .initNftAccount({ bronze: {} })
         .accounts({
           mint: mintAddress,
           tokenAccount: tokenAddress,
@@ -228,7 +229,7 @@ describe("labofi-solana-smart-contract", async () => {
         .signers([keyPair])
         .postInstructions([
           await program.methods
-            .mint(testNftTitle, testNftSymbol, testNftUri)
+            .mint({ bronze: {} }, testNftTitle, testNftSymbol, testNftUri)
             .accounts({
               masterEdition: masterEditionAddress,
               metadata: metadataAddress,

@@ -26,7 +26,7 @@ pub mod labofi_solana_smart_contract {
         Ok(())
     }
 
-    pub fn init_nft_account(ctx: Context<InitNftAccount>) -> Result<()> {
+    pub fn init_nft_account(ctx: Context<InitNftAccount>, profile_rank: ProfileRank) -> Result<()> {
         msg!("Mint: {}", &ctx.accounts.mint.key());
         require!(
             ctx.accounts.mint_authority.key() == ctx.accounts.global_state.admin,
@@ -59,6 +59,7 @@ pub mod labofi_solana_smart_contract {
 
     pub fn mint(
         ctx: Context<MintNft>,
+        profile_rank: ProfileRank,
         metadata_title: String,
         metadata_symbol: String,
         metadata_uri: String,
@@ -153,6 +154,7 @@ pub mod labofi_solana_smart_contract {
 }
 
 #[derive(Accounts)]
+#[instruction(profile_rank: ProfileRank)]
 pub struct MintNft<'info> {
     /// CHECK: We're about to create this with metaplex
     #[account(mut)]
@@ -161,7 +163,7 @@ pub struct MintNft<'info> {
     #[account(mut)]
     pub master_edition: UncheckedAccount<'info>,
     #[account(
-        seeds = ["bronze".as_bytes(), token_account_authority.key().as_ref()],
+        seeds = [profile_rank.to_string().as_bytes(), token_account_authority.key().as_ref()],
         bump,
         mut,
     )]
@@ -179,6 +181,7 @@ pub struct MintNft<'info> {
 }
 
 #[derive(Accounts)]
+#[instruction(profile_rank: ProfileRank)]
 pub struct InitNftAccount<'info> {
     #[account(
         init,
@@ -186,7 +189,7 @@ pub struct InitNftAccount<'info> {
         mint::decimals = 0,
         mint::authority = mint,
         mint::freeze_authority = mint,
-        seeds = ["bronze".as_bytes(), token_account_authority.key().as_ref()],
+        seeds = [profile_rank.to_string().as_bytes(), token_account_authority.key().as_ref()],
         bump,
     )]
     pub mint: Account<'info, Mint>,
@@ -297,6 +300,16 @@ impl ProfileRank {
             ProfileRank::Green => 2usize,
             ProfileRank::Bronze => 3usize,
             ProfileRank::Silver => 4usize,
+        }
+    }
+
+    pub fn to_string(&self) -> String {
+        match self {
+            ProfileRank::White => "white".to_string(),
+            ProfileRank::Gray => "gray".to_string(),
+            ProfileRank::Green => "green".to_string(),
+            ProfileRank::Bronze => "bronze".to_string(),
+            ProfileRank::Silver => "silver".to_string(),
         }
     }
 }
