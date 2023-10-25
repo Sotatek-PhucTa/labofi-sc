@@ -21,7 +21,7 @@ pub mod labofi_solana_smart_contract {
     pub fn init_tracking_state(ctx: Context<InitTrackingState>) -> Result<()> {
         msg!("Initializing tracking state...");
         let tracking_state = &mut ctx.accounts.tracking_state;
-        tracking_state.counted_rank[0] += 1;
+        tracking_state.counted_rank[ProfileRank::White.to_usize()] += 1;
         tracking_state.current_rank = ProfileRank::White;
         Ok(())
     }
@@ -287,6 +287,18 @@ pub enum ProfileRank {
     Green,
     Bronze,
     Silver,
+}
+
+impl ProfileRank {
+    pub fn to_usize(&self) -> usize {
+        match self {
+            ProfileRank::White => 0usize,
+            ProfileRank::Gray => 1usize,
+            ProfileRank::Green => 2usize,
+            ProfileRank::Bronze => 3usize,
+            ProfileRank::Silver => 4usize,
+        }
+    }
 }
 
 #[error_code]
