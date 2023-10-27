@@ -20,18 +20,22 @@ dotenv.config();
     "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
   );
 
-  const mintKeypair: anchor.web3.Keypair = anchor.web3.Keypair.generate();
+  const [mintAddress] = anchor.web3.PublicKey.findProgramAddressSync(
+    [Buffer.from("bronze"), receivedKeyPair.publicKey.toBuffer()],
+    program.programId
+  );
+
   const tokenAddress = anchor.utils.token.associatedAddress({
-    mint: mintKeypair.publicKey,
+    mint: mintAddress,
     owner: receivedKeyPair.publicKey,
   });
-  console.log(`New token: ${mintKeypair.publicKey.toBase58()}`);
+  console.log(`New token: ${mintAddress.toBase58()}`);
 
   const metadataAddress = anchor.web3.PublicKey.findProgramAddressSync(
     [
       Buffer.from("metadata"),
       TOKEN_METADATA_PROGRAM_ID.toBuffer(),
-      mintKeypair.publicKey.toBuffer(),
+      mintAddress.toBuffer(),
     ],
     TOKEN_METADATA_PROGRAM_ID
   )[0];
@@ -41,7 +45,7 @@ dotenv.config();
     [
       Buffer.from("metadata"),
       TOKEN_METADATA_PROGRAM_ID.toBuffer(),
-      mintKeypair.publicKey.toBuffer(),
+      mintAddress.toBuffer(),
       Buffer.from("edition"),
     ],
     TOKEN_METADATA_PROGRAM_ID
@@ -64,26 +68,25 @@ dotenv.config();
       "bronze"
     );
     const tx = await program.methods
-      .initNftAccount()
+      .initNftAccount({ bronze: {} }, 30, 10, 5)
       .accounts({
-        mint: mintKeypair.publicKey,
+        mint: mintAddress,
         tokenAccount: tokenAddress,
         tokenAccountAuthority: receivedKeyPair.publicKey,
         mintAuthority: wallet.publicKey,
         globalState,
       })
-      .signers([mintKeypair])
       .postInstructions([
         await program.methods
-          .mint(nftTitle, nftSymbol, uri)
+          .mint({ bronze: {} }, nftTitle, nftSymbol, uri)
           .accounts({
             masterEdition: masterEditionAddress,
             metadata: metadataAddress,
-            mint: mintKeypair.publicKey,
+            mint: mintAddress,
             mintAuthority: wallet.publicKey,
             tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
+            tokenAccountAuthority: receivedKeyPair.publicKey,
           })
-          .signers([mintKeypair])
           .instruction(),
       ])
       .rpc();
