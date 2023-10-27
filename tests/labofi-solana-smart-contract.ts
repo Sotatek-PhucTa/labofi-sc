@@ -134,7 +134,7 @@ describe("labofi-solana-smart-contract", async () => {
 
     try {
       const tx = await program.methods
-        .initNftAccount({ bronze: {} })
+        .initNftAccount({ bronze: {} }, 30, 10, 5)
         .accounts({
           mint: mintAddress,
           tokenAccount: tokenAddress,
@@ -218,7 +218,7 @@ describe("labofi-solana-smart-contract", async () => {
 
     try {
       const tx = await newProgram.methods
-        .initNftAccount({ bronze: {} })
+        .initNftAccount({ bronze: {} }, 30, 10, 5)
         .accounts({
           mint: mintAddress,
           tokenAccount: tokenAddress,

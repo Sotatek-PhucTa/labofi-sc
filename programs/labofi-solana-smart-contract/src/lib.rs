@@ -26,11 +26,22 @@ pub mod labofi_solana_smart_contract {
         Ok(())
     }
 
-    pub fn init_nft_account(ctx: Context<InitNftAccount>, profile_rank: ProfileRank) -> Result<()> {
+    pub fn init_nft_account(
+        ctx: Context<InitNftAccount>,
+        profile_rank: ProfileRank,
+        sent_contributions: u32,
+        given_contributions: u32,
+        comments: u32,
+    ) -> Result<()> {
         msg!("Mint: {}", &ctx.accounts.mint.key());
         require!(
             ctx.accounts.mint_authority.key() == ctx.accounts.global_state.admin,
             LabofiError::NotAuthorized
+        );
+
+        require!(
+            ProfileRank::evaluate_rank(sent_contributions, given_contributions, comments) == profile_rank,
+            LabofiError::RankInCorrect,
         );
 
         msg!("Minting token to token account...");
@@ -312,6 +323,22 @@ impl ProfileRank {
             ProfileRank::Silver => "silver".to_string(),
         }
     }
+
+    pub fn evaluate_rank(sent_contributions: u32, given_contributions: u32, comments: u32) -> ProfileRank {
+        if sent_contributions >= 50 && given_contributions >= 30 && comments >= 20 {
+            return ProfileRank::Silver;
+        }
+        if sent_contributions >= 30 && given_contributions >= 10 && comments >= 5 {
+            return  ProfileRank::Bronze;
+        }
+        if sent_contributions >= 10 && given_contributions >= 5 && comments >= 3 {
+            return  ProfileRank::Green;
+        }
+        if sent_contributions >= 3 && given_contributions >= 3 && comments >= 1 {
+            return  ProfileRank::Gray;
+        }
+        ProfileRank::White
+    }
 }
 
 #[error_code]
@@ -320,6 +347,8 @@ enum LabofiError {
     NotAuthorized,
     #[msg("Not Production Instruction")]
     NotProductionInstruction,
+    #[msg("Rank incorrect")]
+    RankInCorrect,
     #[msg("Unknown Operation")]
     UnknownOperation,
 }
