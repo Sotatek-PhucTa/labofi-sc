@@ -5,6 +5,7 @@
     },
     "dependencies": {
         "@coral-xyz/anchor": "^0.28.0",
+        "@metaplex-foundation/js": "^0.19.5",
         "bs58": "^5.0.0",
         "dotenv": "^16.3.1"
     },
