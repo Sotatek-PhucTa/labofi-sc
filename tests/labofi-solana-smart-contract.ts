@@ -59,9 +59,8 @@ describe("labofi-solana-smart-contract", async () => {
   });
 
   it("Initialize tracking state success", async () => {
-    const userKeyPair = anchor.web3.Keypair.generate();
     let [trackingState] = anchor.web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("tracking"), userKeyPair.publicKey.toBuffer()],
+      [Buffer.from("tracking"), receivedKeyPair.publicKey.toBuffer()],
       program.programId
     );
 
@@ -75,7 +74,7 @@ describe("labofi-solana-smart-contract", async () => {
         .initTrackingState()
         .accounts({
           trackingState,
-          userAccount: userKeyPair.publicKey,
+          userAccount: receivedKeyPair.publicKey,
           initializer: wallet.publicKey,
           globalState,
         })
@@ -105,6 +104,11 @@ describe("labofi-solana-smart-contract", async () => {
       owner: receivedKeyPair.publicKey,
     });
     console.log(`New token: ${mintAddress.toBase58()}`);
+
+    const [trackingState] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("tracking"), receivedKeyPair.publicKey.toBuffer()],
+      program.programId
+    );
 
     const metadataAddress = anchor.web3.PublicKey.findProgramAddressSync(
       [
@@ -152,6 +156,7 @@ describe("labofi-solana-smart-contract", async () => {
               mintAuthority: wallet.publicKey,
               tokenAccountAuthority: receivedKeyPair.publicKey,
               tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
+              trackingState,
             })
             .instruction(),
         ])
@@ -161,6 +166,12 @@ describe("labofi-solana-smart-contract", async () => {
       console.error(err);
       throw err;
     }
+    const trackingStateAccount = await program.account.trackingState.fetch(
+      trackingState
+    );
+    console.log(trackingStateAccount.countedRank);
+    assert(trackingStateAccount.countedRank[3] === 1);
+    expect(trackingStateAccount.currentRank).haveOwnProperty("bronze");
   });
 
   it("Mint failure NotAuthorized", async () => {

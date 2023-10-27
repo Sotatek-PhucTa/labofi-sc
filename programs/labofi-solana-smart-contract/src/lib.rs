@@ -3,7 +3,7 @@ use anchor_spl::token::{Mint, TokenAccount};
 use anchor_spl::{associated_token, token};
 use mpl_token_metadata::{instructions as token_instructions, types::DataV2};
 
-declare_id!("5H5UzP14GXG9YuSem39BVTXky6PfEbyAP95RE4iSN1hA");
+declare_id!("ANYpUxvMWd5pBwGDf4cTejCYCJTP5ecrSof968gcFGBT");
 
 #[program]
 pub mod labofi_solana_smart_contract {
@@ -84,12 +84,16 @@ pub mod labofi_solana_smart_contract {
         let master_edition_account = ctx.accounts.master_edition.to_account_info();
         let metadata_account = ctx.accounts.metadata.to_account_info();
         let token_program_account = ctx.accounts.token_program.to_account_info();
+        let tracking_state_account = &mut ctx.accounts.tracking_state;
 
         msg!("Creating metadata account...");
         msg!(
             "Metadata account address: {}",
             &ctx.accounts.metadata.to_account_info().key()
         );
+
+        tracking_state_account.counted_rank[profile_rank.to_usize()] += 1;
+        tracking_state_account.current_rank = profile_rank;
 
         let mut create_metadata_account_cpi =
             token_instructions::CreateMetadataAccountV3CpiBuilder::new(
@@ -189,6 +193,12 @@ pub struct MintNft<'info> {
     pub token_program: Program<'info, token::Token>,
     /// CHECK: Metaplex will check this
     pub token_metadata_program: UncheckedAccount<'info>,
+    #[account(
+        mut,
+        seeds = [b"tracking", token_account_authority.key().as_ref()],
+        bump,
+    )]
+    pub tracking_state: Account<'info, TrackingState>,
 }
 
 #[derive(Accounts)]
