@@ -3,7 +3,7 @@ use anchor_spl::token::{Mint, TokenAccount};
 use anchor_spl::{associated_token, token};
 use mpl_token_metadata::{instructions as token_instructions, types::DataV2};
 
-declare_id!("5H5UzP14GXG9YuSem39BVTXky6PfEbyAP95RE4iSN1hA");
+declare_id!("ANYpUxvMWd5pBwGDf4cTejCYCJTP5ecrSof968gcFGBT");
 
 #[program]
 pub mod labofi_solana_smart_contract {
@@ -18,11 +18,30 @@ pub mod labofi_solana_smart_contract {
         Ok(())
     }
 
-    pub fn init_nft_account(ctx: Context<InitNftAccount>) -> Result<()> {
+    pub fn init_tracking_state(ctx: Context<InitTrackingState>) -> Result<()> {
+        msg!("Initializing tracking state...");
+        let tracking_state = &mut ctx.accounts.tracking_state;
+        tracking_state.counted_rank[ProfileRank::White.to_usize()] += 1;
+        tracking_state.current_rank = ProfileRank::White;
+        Ok(())
+    }
+
+    pub fn init_nft_account(
+        ctx: Context<InitNftAccount>,
+        profile_rank: ProfileRank,
+        sent_contributions: u32,
+        given_contributions: u32,
+        comments: u32,
+    ) -> Result<()> {
         msg!("Mint: {}", &ctx.accounts.mint.key());
         require!(
             ctx.accounts.mint_authority.key() == ctx.accounts.global_state.admin,
             LabofiError::NotAuthorized
+        );
+
+        require!(
+            ProfileRank::evaluate_rank(sent_contributions, given_contributions, comments) == profile_rank,
+            LabofiError::RankInCorrect,
         );
 
         msg!("Minting token to token account...");
@@ -39,8 +58,8 @@ pub mod labofi_solana_smart_contract {
                 &[&[
                     "bronze".as_bytes(),
                     ctx.accounts.token_account_authority.key().as_ref(),
-                    &[*ctx.bumps.get("mint").unwrap()]
-                ]]
+                    &[*ctx.bumps.get("mint").unwrap()],
+                ]],
             ),
             1,
         )
@@ -51,6 +70,7 @@ pub mod labofi_solana_smart_contract {
 
     pub fn mint(
         ctx: Context<MintNft>,
+        profile_rank: ProfileRank,
         metadata_title: String,
         metadata_symbol: String,
         metadata_uri: String,
@@ -64,12 +84,16 @@ pub mod labofi_solana_smart_contract {
         let master_edition_account = ctx.accounts.master_edition.to_account_info();
         let metadata_account = ctx.accounts.metadata.to_account_info();
         let token_program_account = ctx.accounts.token_program.to_account_info();
+        let tracking_state_account = &mut ctx.accounts.tracking_state;
 
         msg!("Creating metadata account...");
         msg!(
             "Metadata account address: {}",
             &ctx.accounts.metadata.to_account_info().key()
         );
+
+        tracking_state_account.counted_rank[profile_rank.to_usize()] += 1;
+        tracking_state_account.current_rank = profile_rank;
 
         let mut create_metadata_account_cpi =
             token_instructions::CreateMetadataAccountV3CpiBuilder::new(
@@ -94,13 +118,11 @@ pub mod labofi_solana_smart_contract {
         });
 
         create_metadata_account_cpi
-            .invoke_signed(&[
-                &[
-                    "bronze".as_bytes(),
-                    token_account_authority.key().as_ref(),
-                    &[*ctx.bumps.get("mint").unwrap()]
-                ]
-            ])
+            .invoke_signed(&[&[
+                "bronze".as_bytes(),
+                token_account_authority.key().as_ref(),
+                &[*ctx.bumps.get("mint").unwrap()],
+            ]])
             .expect("Failed to create metadata account");
 
         msg!("Creating metadata account success");
@@ -125,14 +147,11 @@ pub mod labofi_solana_smart_contract {
         create_master_edition_cpi.system_program(&system_program_account);
 
         create_master_edition_cpi
-            .invoke_signed(&[
-                &[
-                    "bronze".as_bytes(),
-                    token_account_authority.key().as_ref(),
-                    &[*ctx.bumps.get("mint").unwrap()],
-                ]
-            ]
-            )
+            .invoke_signed(&[&[
+                "bronze".as_bytes(),
+                token_account_authority.key().as_ref(),
+                &[*ctx.bumps.get("mint").unwrap()],
+            ]])
             .expect("Failed to create master edition metadata account");
 
         msg!("Mint token success");
@@ -150,6 +169,7 @@ pub mod labofi_solana_smart_contract {
 }
 
 #[derive(Accounts)]
+#[instruction(profile_rank: ProfileRank)]
 pub struct MintNft<'info> {
     /// CHECK: We're about to create this with metaplex
     #[account(mut)]
@@ -158,7 +178,7 @@ pub struct MintNft<'info> {
     #[account(mut)]
     pub master_edition: UncheckedAccount<'info>,
     #[account(
-        seeds = ["bronze".as_bytes(), token_account_authority.key().as_ref()],
+        seeds = [profile_rank.to_string().as_bytes(), token_account_authority.key().as_ref()],
         bump,
         mut,
     )]
@@ -173,9 +193,16 @@ pub struct MintNft<'info> {
     pub token_program: Program<'info, token::Token>,
     /// CHECK: Metaplex will check this
     pub token_metadata_program: UncheckedAccount<'info>,
+    #[account(
+        mut,
+        seeds = [b"tracking", token_account_authority.key().as_ref()],
+        bump,
+    )]
+    pub tracking_state: Account<'info, TrackingState>,
 }
 
 #[derive(Accounts)]
+#[instruction(profile_rank: ProfileRank)]
 pub struct InitNftAccount<'info> {
     #[account(
         init,
@@ -183,7 +210,7 @@ pub struct InitNftAccount<'info> {
         mint::decimals = 0,
         mint::authority = mint,
         mint::freeze_authority = mint,
-        seeds = ["bronze".as_bytes(), token_account_authority.key().as_ref()],
+        seeds = [profile_rank.to_string().as_bytes(), token_account_authority.key().as_ref()],
         bump,
     )]
     pub mint: Account<'info, Mint>,
@@ -239,10 +266,89 @@ pub struct CloseGlobalState<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[derive(Accounts)]
+pub struct InitTrackingState<'info> {
+    #[account(
+        init,
+        space = 8 + 32 + 8 + 4 * 5,
+        payer = initializer,
+        seeds = [b"tracking", user_account.key().as_ref()],
+        bump,
+    )]
+    pub tracking_state: Account<'info, TrackingState>,
+    /// CHECK: We're about to create this with metaplex
+    #[account()]
+    pub user_account: UncheckedAccount<'info>,
+    #[account(
+        mut,
+        address = global_state.admin.key(),
+    )]
+    pub initializer: Signer<'info>,
+    #[account(
+        seeds = [b"global"],
+        bump,
+    )]
+    pub global_state: Account<'info, GlobalState>,
+    pub system_program: Program<'info, System>,
+}
+
 #[account]
 pub struct GlobalState {
     pub admin: Pubkey,
     pub mint_time: u64,
+}
+
+#[account]
+pub struct TrackingState {
+    pub counted_rank: [u32; 5],
+    pub current_rank: ProfileRank,
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ProfileRank {
+    White,
+    Gray,
+    Green,
+    Bronze,
+    Silver,
+}
+
+impl ProfileRank {
+    pub fn to_usize(&self) -> usize {
+        match self {
+            ProfileRank::White => 0usize,
+            ProfileRank::Gray => 1usize,
+            ProfileRank::Green => 2usize,
+            ProfileRank::Bronze => 3usize,
+            ProfileRank::Silver => 4usize,
+        }
+    }
+
+    pub fn to_string(&self) -> String {
+        match self {
+            ProfileRank::White => "white".to_string(),
+            ProfileRank::Gray => "gray".to_string(),
+            ProfileRank::Green => "green".to_string(),
+            ProfileRank::Bronze => "bronze".to_string(),
+            ProfileRank::Silver => "silver".to_string(),
+        }
+    }
+
+    pub fn evaluate_rank(sent_contributions: u32, given_contributions: u32, comments: u32) -> ProfileRank {
+        if sent_contributions >= 50 && given_contributions >= 30 && comments >= 20 {
+            return ProfileRank::Silver;
+        }
+        if sent_contributions >= 30 && given_contributions >= 10 && comments >= 5 {
+            return  ProfileRank::Bronze;
+        }
+        if sent_contributions >= 10 && given_contributions >= 5 && comments >= 3 {
+            return  ProfileRank::Green;
+        }
+        if sent_contributions >= 3 && given_contributions >= 3 && comments >= 1 {
+            return  ProfileRank::Gray;
+        }
+        ProfileRank::White
+    }
 }
 
 #[error_code]
@@ -251,4 +357,8 @@ enum LabofiError {
     NotAuthorized,
     #[msg("Not Production Instruction")]
     NotProductionInstruction,
+    #[msg("Rank incorrect")]
+    RankInCorrect,
+    #[msg("Unknown Operation")]
+    UnknownOperation,
 }

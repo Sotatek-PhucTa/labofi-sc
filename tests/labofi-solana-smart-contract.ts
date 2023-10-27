@@ -2,8 +2,9 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { BN } from "bn.js";
 import { assert } from "chai";
-import { getLabofiProgram, getWalletSuite } from "../scripts/helpers";
+import { delay, getLabofiProgram, getWalletSuite } from "../scripts/helpers";
 import { LabofiSolanaSmartContract } from "../target/types/labofi_solana_smart_contract";
+import { expect } from "chai";
 
 describe("labofi-solana-smart-contract", async () => {
   const testNftTitle = "Labofi_Profile";
@@ -57,7 +58,42 @@ describe("labofi-solana-smart-contract", async () => {
     assert(globalStateAccount.mintTime.gt(new BN(0)));
   });
 
-  xit("Mint successs", async () => {
+  it("Initialize tracking state success", async () => {
+    let [trackingState] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("tracking"), receivedKeyPair.publicKey.toBuffer()],
+      program.programId
+    );
+
+    const globalState = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("global")],
+      program.programId
+    )[0];
+
+    try {
+      const tx = await program.methods
+        .initTrackingState()
+        .accounts({
+          trackingState,
+          userAccount: receivedKeyPair.publicKey,
+          initializer: wallet.publicKey,
+          globalState,
+        })
+        .rpc();
+      console.log(tx);
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+
+    const trackingStateAccount = await program.account.trackingState.fetch(
+      trackingState
+    );
+    console.log(trackingStateAccount.countedRank);
+    assert(trackingStateAccount.countedRank[0] === 1);
+    expect(trackingStateAccount.currentRank).haveOwnProperty("white");
+  });
+
+  it("Mint successs", async () => {
     // Add your test here.
     const [mintAddress] = anchor.web3.PublicKey.findProgramAddressSync(
       [Buffer.from("bronze"), receivedKeyPair.publicKey.toBuffer()],
@@ -68,6 +104,11 @@ describe("labofi-solana-smart-contract", async () => {
       owner: receivedKeyPair.publicKey,
     });
     console.log(`New token: ${mintAddress.toBase58()}`);
+
+    const [trackingState] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("tracking"), receivedKeyPair.publicKey.toBuffer()],
+      program.programId
+    );
 
     const metadataAddress = anchor.web3.PublicKey.findProgramAddressSync(
       [
@@ -97,7 +138,7 @@ describe("labofi-solana-smart-contract", async () => {
 
     try {
       const tx = await program.methods
-        .initNftAccount()
+        .initNftAccount({ bronze: {} }, 30, 10, 5)
         .accounts({
           mint: mintAddress,
           tokenAccount: tokenAddress,
@@ -107,7 +148,7 @@ describe("labofi-solana-smart-contract", async () => {
         })
         .postInstructions([
           await program.methods
-            .mint(testNftTitle, testNftSymbol, testNftUri)
+            .mint({ bronze: {} }, testNftTitle, testNftSymbol, testNftUri)
             .accounts({
               masterEdition: masterEditionAddress,
               metadata: metadataAddress,
@@ -115,6 +156,7 @@ describe("labofi-solana-smart-contract", async () => {
               mintAuthority: wallet.publicKey,
               tokenAccountAuthority: receivedKeyPair.publicKey,
               tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
+              trackingState,
             })
             .instruction(),
         ])
@@ -124,9 +166,15 @@ describe("labofi-solana-smart-contract", async () => {
       console.error(err);
       throw err;
     }
+    const trackingStateAccount = await program.account.trackingState.fetch(
+      trackingState
+    );
+    console.log(trackingStateAccount.countedRank);
+    assert(trackingStateAccount.countedRank[3] === 1);
+    expect(trackingStateAccount.currentRank).haveOwnProperty("bronze");
   });
 
-  xit("Mint failure NotAuthorized", async () => {
+  it("Mint failure NotAuthorized", async () => {
     const { provider, wallet, keyPair } = await getWalletSuite("devnet", true);
     console.log("New wallet is ", wallet.publicKey.toBase58());
     const [mintAddress] = anchor.web3.PublicKey.findProgramAddressSync(
@@ -140,6 +188,7 @@ describe("labofi-solana-smart-contract", async () => {
         5000000
       );
       console.log("Tx airdrop ", txAirdrop);
+      await delay(5000);
     } catch (err) {
       console.error("Error airdrop");
       console.error(err);
@@ -180,7 +229,7 @@ describe("labofi-solana-smart-contract", async () => {
 
     try {
       const tx = await newProgram.methods
-        .initNftAccount()
+        .initNftAccount({ bronze: {} }, 30, 10, 5)
         .accounts({
           mint: mintAddress,
           tokenAccount: tokenAddress,
@@ -191,7 +240,7 @@ describe("labofi-solana-smart-contract", async () => {
         .signers([keyPair])
         .postInstructions([
           await program.methods
-            .mint(testNftTitle, testNftSymbol, testNftUri)
+            .mint({ bronze: {} }, testNftTitle, testNftSymbol, testNftUri)
             .accounts({
               masterEdition: masterEditionAddress,
               metadata: metadataAddress,
