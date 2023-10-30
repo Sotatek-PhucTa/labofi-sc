@@ -9,6 +9,9 @@ We use https request: `POST /api/v1/solana/mint/nft/rank/{endUserID}`, with foll
   "number_of_given_contributions" : 2,
   "number_of_comments" : 3,
   "to_public_key": "Base58 Public key of receiver account",
-  "from_private_key": "Base58 Private key of Admin account"
+  "from_private_key": "Base58 Private key of Admin account",
+  "nft_symbol": "LABOFI", (Optional),
+  "nft_name": "Labofi Profile", (Optional),
+  "nft_image": "https://labofi.com/image.png" (Optional)
 }
 ```
